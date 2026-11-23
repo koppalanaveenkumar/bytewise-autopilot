@@ -56,10 +56,19 @@ Each tool's first lines say how to use it.
 
 ## 2. Evening explainer Short (about 45-50 seconds, ready by 16:00 IST, posts 17:00)
 
-- Pick the hottest tech topic of the day; the user says yesterday's topic got more reach. Title format: "What is X? Explained Simply" (no date, no hashtags in the title).
-- Script: hook in the first 2 seconds, one idea, simple English, 5-6 short paragraphs (one per scene). End with "Follow for more simple tech explained".
-- Same engine and same steps (voice, footage, scenes, checklist, render). Use about 6 scenes, with the header text "EXPLAINED SIMPLY".
-- Thumbnail rules are the same as the news.
+- **Topic:** pick the hottest beginner-friendly tech topic of the day (yesterday's topic got more reach), not one already in `state/log.md`.
+- **Title format:** "What is X? Explained Simply" (no date, no hashtags in the title).
+- **Script:** 5-6 short paragraphs (one per scene).
+  - Hook in the first 2 seconds, on ONE topic.
+  - One idea only, simple English.
+  - End with "Follow for more simple tech explained".
+- **Build:** use the same engine and steps as the news (voice, footage, scenes, checklist, render). The header text is "EXPLAINED SIMPLY".
+- **Look, scene by scene:**
+  1. Hook: real footage, moving from frame 0, plus ktext with one highlighted word.
+  2. Explanation, 2-3 scenes: glow-sketch diagrams of HOW it works (devices, arrows with flowing dots, labels). Darken the footage behind them. Use at least one camera shot (SHOTS) that zooms in on the key part of the diagram.
+  3. Payoff and ending: ktext with a highlight word, then the follow line.
+  - Alternate text size, direction and position between scenes. Transitions are automatic: push-through plus light leak.
+- **Thumbnail:** same rules as the news.
 
 ## 3. Python for Beginners episodes (2 a day, Mon-Sat; slot A posts 18:00, slot B posts 19:00 IST)
 
