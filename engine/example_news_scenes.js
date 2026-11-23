@@ -15,6 +15,7 @@ function counterS(s, x, y, size, t, t0, color = ORG, align = "left") { if (t < t
 
 const TILES = [["1", "AI SOLVES MATH"], ["2", "TESLA AI VIEW"], ["3", "PASSWORD TRAP"], ["4", "US OUTAGES"], ["5", "AMAZON $7B"], ["6", "UBISOFT AI"], ["7", "TO DO SHUTS"]];
 const S = [];
+const SHOTS = [];  // optional camera shots per scene, e.g. SHOTS[3] = [[0, 1, 540, 960], [2.0, 1.6, 540, 1100], [4.5, 1, 540, 960]]
 S[0] = t => {
   const t2 = P[0][1];
   if (t < t2 - .15) {
@@ -205,13 +206,17 @@ window.renderAt = async (t) => {
     n.solid.material.opacity = 1 - .9 * prog(rel, .9, .8); n.edge.material.opacity = .9 - .62 * prog(rel, .9, .8); }
   bgCam.position.set(.5 * Math.sin(t * .23), .4 * Math.cos(t * .19), D); bgCam.lookAt(0, 0, 0);
   c = csc; c.clearRect(0, 0, 1080, 1920); S[i](t); c = cfx; tex.needsUpdate = true;
-  const e = i === 0 ? 1 : ease(prog(rel, -.15, .7)), dir = i % 2 ? 1 : -1;
-  card.rotation.set(.04 * Math.sin(rel * .5 + i) + .25 * (1 - e), .065 * Math.sin(rel * .37 + i * 1.3) + .9 * dir * (1 - e), .1 * dir * (1 - e));
-  card.position.set(sx * .012 + 2.5 * dir * (1 - e), -sy * .012, -7 * (1 - e) + .55 * prog(rel, 0, dur));
+  // camera: optional shot keyframes per scene (SHOTS[i] = [[relT, scale, focusX, focusY], ...]) + push-through at cuts
+  const SH = shotAt(rel, (typeof SHOTS !== "undefined" && SHOTS[i]) || null), fx = SH.fx ?? 540, fy = SH.fy ?? 960;
+  const zoom = SH.s * (1 + (i === 0 ? Math.max(0, pushZ(rel, dur) - .35 * Math.pow(1 - clamp(rel / .7), 3)) : pushZ(rel, dur))) * (1 + .03 * prog(rel, 0, dur));
+  const u = 10 / 1920;
+  card.scale.set(zoom, zoom, 1);
+  card.rotation.set(.03 * Math.sin(rel * .5 + i), .05 * Math.sin(rel * .37 + i * 1.3), 0);
+  card.position.set(sx * .012 - (fx - 540) * u * (zoom - 1), -sy * .012 + (fy - 960) * u * (zoom - 1), 0);
   renderer.clear(); renderer.render(bgScene, bgCam);
   header(t, i); hitFx(t); captions(t);
   txt("@heybytewise · follow for daily tech news", 60, 1880, "24px Mono", "rgba(243,239,230,.5)");
-  wipe(t); grain(t);
+  leak(t, PS.slice(1)); grain(t);
 };
 await window.renderAt(0);
 window.READY = true;

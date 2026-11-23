@@ -63,23 +63,40 @@ Each tool's first lines say how to use it.
 
 ## 3. Python for Beginners episodes (2 a day, Mon-Sat; slot A posts 18:00, slot B posts 19:00 IST)
 
+Fully animated, 1920x1080, built with the episode engine (`engine/episode_head.html` + `engine/motion.js`). The old `python_episode/` kit is retired; use it only if the engine breaks.
+
 1. **Claim the episode number first.** Pull main, read `state/python.json`, take `last_episode + 1` and the first item of `next_topics`. Write those back (`last_episode` +1, topic moved into `done`), then commit and push right away, so slot B gets the next one.
-2. The title format is "Python for Beginners | Episode N - Explained Simply". The script follows the ByteWise long-video rules:
-   - hook in the first 10 seconds
-   - one concept at a time
-   - one real-life example
-   - a recap at the end
-   - CTA: "Subscribe for Episode N+1 - simple tech explained"
-   - aim for 2.5-4 minutes
-   - "with me", never "us"
-   Run every code example in Python first, so the screen output is real.
-3. Kit: `$BW/python_episode/`. Copy `scenes_ep11.py` to `$W/scenes_epN.py` and rewrite `GROUPS` and the scenes for the topic, keeping the same look (1440p, code windows with typing, output panel, LEARN tag, chapter label).
-   - Voice: `python3 $BW/tools/gen.py` in `$W`.
-   - Check: `cd $W && SCENES=scenes_epN python3 $BW/python_episode/build_episode.py plan`, then `... frames <sceneid>:<t> ...` and look at `out/sheet.png`.
-   - Render: `... render`, then `OUTNAME=$W/out/python-for-beginners-epN-<slug>.mp4 ... join`. This prints the chapters.
-   - Subtitles: `python3 $BW/python_episode/srt.py $W/out/python-for-beginners-epN-english.srt`
-4. Thumbnail: 1280x720, in the style of `python_episode/example_thumb_ep11.png` (EP N, 3 words or fewer, Python tag, logo). No cartoon characters.
-5. Posting: YouTube only (horizontal video), slot A at 18:00 IST, slot B at 19:00 IST. The description includes the chapters.
+2. **Script** (`el_script.txt`, one paragraph per scene, about 6-10 paragraphs, 2.5-4 minutes in total):
+   - Paragraph 1 is the hook (what you will be able to do), one idea, no channel intro.
+   - Then one concept per paragraph, with one real-life example.
+   - Then a recap paragraph.
+   - The last line: "Subscribe for Episode N+1, simple tech explained."
+   - "With me", never "us".
+   - Run every code example in Python first; the output on screen must be real.
+   - Put pronunciation fixes in `say.json`.
+3. **Voice + timings:** `python3 $BW/tools/gen.py && python3 $BW/tools/export.py`, then write `ep.json` = {"ep": N, "topic": "<Topic>"}.
+4. **Scenes:**
+   - Copy `$BW/engine/example_episode_scenes.js` to `$W/scenes.js` and rewrite `S[]`, `CHAPTERS` (one name per paragraph) and `SHOTS` for the topic. Keep `renderAt`.
+   - Every scene has motion: a ktext title with one highlighted word, a codeWin that types the code (line times from `W("word", para)`), an outputWin with the real output, and glow-sketch diagrams of the idea (boxes, arrows, flowing dots, labels).
+   - Use 1-2 camera shots per episode (SHOTS: zoom in on the diagram or the line being explained, then back to wide).
+   - Alternate text size, direction and position between scenes.
+   - Keep content out of the header band (top 130 px) and the captions band (bottom 110 px), including during close-ups.
+   - Build: `python3 $BW/tools/build_page.py $W $W/scenes.js episode`
+5. **Check, then render.**
+   - Stills: `BW_SIZE=1920x1080 python3 $BW/tools/rec.py $W 8800 stills 0 1.5 ...` (frame 0 full and moving, one still per scene, look at each).
+   - Render: `BW_SIZE=1920x1080 bash $BW/tools/render.sh $W $W/out/python-for-beginners-epN-<slug>.mp4`. Fast: about 1 minute of render per 20 seconds of video.
+6. **Chapters** for the description: the start of each paragraph `P[i][0]` with its CHAPTERS name. The first one is 0:00, there are at least 3, and each is at least 10 s long (merge short ones).
+7. **Subtitles:** write an English .srt from the `news.json` chunks (start and end of each 3-word chunk).
+8. **Thumbnail:** 1280x720, dark ByteWise look with glowing code, "EP N" big, at most 3 words, a Python tag, and the logo. No cartoon characters.
+9. **Posting:** YouTube only (horizontal video), slot A at 18:00 IST, slot B at 19:00 IST. The description includes the chapters.
+
+## Motion kit (all formats, `engine/motion.js`)
+
+- `ktext(text, x, y, size, t, t0, {dir, font, weight, color, align, emph: {word, kind, color}})`: letters stretch in with a directional motion blur. `kind` is one of pill, under, marker, box, color, strike. Use one highlighted word per line at most, and the same kind throughout one video. Alternate `dir` between "up" and "left" from scene to scene.
+- `pocket(x, y, w, h, a)`: a soft dark area behind text on busy footage.
+- **Transitions are automatic:** each scene is born slightly large and settles, then pushes in before the cut, and a soft light leak covers the cut. Do not add flat colour-block wipes.
+- `SHOTS[i] = [[relT, scale, focusX, focusY], ...]`: camera shots inside a scene. Zoom to the element being talked about (1.3-1.6x), hold, then back to 1. Keep text that is visible during a close-up near the focus point, so it is not cut off at the frame edge.
+- Titles: white with a drop shadow, not glowing. Keep glow for objects and sketches.
 
 ## Glow sketch (use it where it fits)
 

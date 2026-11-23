@@ -1,4 +1,4 @@
-"""Film the page. stills: python3 rec.py WORKDIR PORT stills 0 2.5 10 ... -> /tmp/nw_<t>.jpg
+"""Film the page (portrait 1080x1920 by default; set BW_SIZE=1920x1080 for Python episodes). stills: python3 rec.py WORKDIR PORT stills 0 2.5 10 ... -> /tmp/nw_<t>.jpg
 video: python3 rec.py WORKDIR PORT video F0 F1 OUT.mp4 (frames F0..F1-1 at 30 fps). Run two halves in parallel on 2 CPUs."""
 import sys, subprocess, http.server, threading, functools, shutil, os
 from playwright.sync_api import sync_playwright
@@ -11,7 +11,8 @@ CH = shutil.which("google-chrome") or shutil.which("chromium")
 with sync_playwright() as p:
     kw = {"executable_path": CH} if CH else {}
     b = p.chromium.launch(args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"], **kw)
-    pg = b.new_page(viewport={"width": 1080, "height": 1920})
+    VW, VH = map(int, os.environ.get("BW_SIZE", "1080x1920").split("x"))
+    pg = b.new_page(viewport={"width": VW, "height": VH})
     pg.on("pageerror", lambda e: print("pageerror:", e, flush=True))
     pg.goto(f"http://127.0.0.1:{port}/index.html"); pg.wait_for_function("window.READY === true", timeout=180000)
     if mode == "stills":
