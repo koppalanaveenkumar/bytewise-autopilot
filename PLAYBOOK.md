@@ -16,7 +16,7 @@ W=/tmp/work; mkdir -p $W/out; cd $W
 
 Each tool's first lines say how to use it.
 
-## 1. Morning news (7 stories, about 2 minutes, ready by 7:00 IST)
+## 1. Morning news (7 stories, about 2 minutes, ready by 7:00 IST, posts 08:00)
 
 1. **Research.** Search the web for the last 24-36 hours of tech and AI news. Pick 7 stories a beginner cares about. Prefer big names, money, safety, India relevance, and anything with strong visuals. Verify every number and claim in at least one reliable source. Anthropic stories: strictly factual, no opinion. No rumours stated as facts ("reports say" for unconfirmed deals).
 2. **Script** (`el_script.txt`, one paragraph per story, blank line between):
@@ -54,7 +54,7 @@ Each tool's first lines say how to use it.
    - About 15 tags.
    - Instagram caption ending with: #explorepage #foryou #fyp #viralreels #trendingnow
 
-## 2. Evening explainer Short (about 45-50 seconds, ready by 18:00 IST)
+## 2. Evening explainer Short (about 45-50 seconds, ready by 16:00 IST, posts 17:00)
 
 - Pick the hottest tech topic of the day; the user says yesterday's topic got more reach. Title format: "What is X? Explained Simply" (no date, no hashtags in the title).
 - Script: hook in the first 2 seconds, one idea, simple English, 5-6 short paragraphs (one per scene). End with "Follow for more simple tech explained".
