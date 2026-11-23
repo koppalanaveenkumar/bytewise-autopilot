@@ -139,9 +139,10 @@ The engine has a glow-sketch toolkit in `engine/head.html`: neon lines that draw
    - Fix anything the draft refuses with `vidiq_social_post_draft_update`.
    - **Every** `vidiq_social_post_draft_update` that touches the YouTube destination must send publishAt and privacyStatus "public" again: an update can reset YouTube's time to none.
    - Before telling the user, call `vidiq_social_post_draft_get` and check that **both** destinations show scheduledFor = the slot time. If YouTube shows null, set it again with draft_update.
-6. **Notify the user.** Send the video file, the thumbnails and the text with SendUserFile and SendUserMessage, so their phone gets a notification. Say exactly when it will go out. End with: "Reply 'post it' to schedule it, or tell me what to change."
+6. **Notify the user.** Send the video file, the thumbnails and the text with SendUserFile and SendUserMessage, so their phone gets a notification. Say exactly when it will go out. For YouTube, mention that the thumbnail is set right after scheduling and costs 5 vidIQ credits. End with: "Reply 'post it' to schedule it, or tell me what to change."
 7. **Publish only on approval.**
    - Only after the user replies "post it" in this chat: first `vidiq_social_post_draft_get`. If YouTube's scheduledFor is null, restore the slot time with draft_update (publishAt + privacyStatus "public") and use the new revision. Then `vidiq_social_post_publish(postId, revision)`. Then confirm the scheduled time and say whether any destination was refused.
+   - **Thumbnail:** YouTube drops the thumbnailImageId set in the draft. "post it" also approves the 5 vidIQ credits to set it. Once `vidiq_social_post_status` shows YouTube as completed with a postUrl, call `vidiq_update_video_thumbnail(channelId, videoId from postUrl, thumbnail=THUMB_URL)`. THUMB_URL is the raw media-branch PNG from publish_prep.sh. Say it's set.
    - If they ask for changes, make them, re-render if needed, and update the draft.
    - If they reply after the slot time, set publishAt to now plus 10 minutes and say so.
 
