@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: Anton; src: url(anton.ttf); }
+@font-face { font-family: Inter; src: url(inter.otf); font-weight: 700; }
+@font-face { font-family: Mono; src: url(mono.ttf); }
+html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; background: #070a14; }
+#bg { position: absolute; inset: 0; background:
+  radial-gradient(900px 900px at 50% 60%, rgba(255,74,28,0.13), transparent 70%),
+  radial-gradient(700px 600px at 15% 8%, rgba(70,110,255,0.13), transparent 70%),
+  linear-gradient(#070a14, #0b0f1e 60%, #06080f); }
+#grid { position: absolute; inset: 0; opacity: .06;
+  background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px);
+  background-size: 60px 60px; }
+canvas { position: absolute; inset: 0; }
+#vig { position: absolute; inset: 0; background: radial-gradient(1300px 1700px at 50% 50%, transparent 62%, rgba(0,0,0,.6)); }
+</style></head>
+<body>
+<div id="bg"></div><div id="grid"></div>
+<canvas id="bv" width="1080" height="1920"></canvas>
+<canvas id="gl" width="1080" height="1920"></canvas>
+<canvas id="fx" width="1080" height="1920"></canvas>
+<div id="vig"></div>
+<script type="importmap">{ "imports": { "three": "./node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+import * as THREE from "three";
+const NJ = await (await fetch("news.json")).json();
+const badge = new Image(); badge.src = "badge.png"; await badge.decode();
+await Promise.all(["100px Anton", "700 60px Inter", "40px Mono"].map(f => document.fonts.load(f)));
+
+// ---------------- timing ----------------
+const P = NJ.P, END = NJ.end, WORDS = NJ.words, CHUNKS = NJ.chunks, EV = NJ.EV;
+const PS = P.map(p => p[0]);
+const W = (txt, para, after = 0) => { for (const w of WORDS) if (w[3] === para && w[0] >= after && w[2].replace(/[^\w%,./']/g, "").toLowerCase().startsWith(txt.toLowerCase())) return w[0]; return PS[para]; };
+const sceneAt = t => { let i = 0; for (let k = 0; k < PS.length; k++) if (t >= PS[k] - 0.0001 || k === 0) i = k; return i; };
+
+// ---------------- helpers ----------------
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const ease = u => 1 - Math.pow(1 - clamp(u), 3);
+const io = u => { u = clamp(u); return u < .5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2; };
+const back = u => { u = clamp(u); const c = 1.9; return 1 + (c + 1) * Math.pow(u - 1, 3) + c * Math.pow(u - 1, 2); };
+const prog = (t, t0, d) => clamp((t - t0) / d);
+function rand(seed) { let s = seed; return () => (s = (s * 16807) % 2147483647) / 2147483647; }
+const ORG = "#ff4a1c", CREAM = "#f3efe6", YEL = "#ffd23a", GREY = "#8a90a6", INK = "#0b0f1e", GRN = "#4ade80";
+
+const fx = document.getElementById("fx"), cfx = fx.getContext("2d");
+const sc = document.createElement("canvas"); sc.width = 1080; sc.height = 1920; const csc = sc.getContext("2d");
+let c = cfx;
+function txt(s, x, y, font, color, align = "left", alpha = 1, base = "alphabetic") { c.save(); c.globalAlpha *= alpha; c.font = font; c.fillStyle = color; c.textAlign = align; c.textBaseline = base; c.fillText(s, x, y); c.restore(); }
+function rr(x, y, w, h, r, fill, stroke, lw = 4) { c.beginPath(); c.roundRect(x, y, w, h, r); if (fill) { c.fillStyle = fill; c.fill(); } if (stroke) { c.strokeStyle = stroke; c.lineWidth = lw; c.stroke(); } }
+// slam a headline line: drops in with overshoot
+function slam(s, x, y, size, color, t, t0, align = "left") {
+  if (t < t0) return;
+  c.save(); c.font = `${size}px Anton`; c.fillStyle = color; c.textAlign = "left";
+  const tw = c.measureText(s).width; let x0 = align === "center" ? x - tw / 2 : (align === "right" ? x - tw : x);
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i]; if (ch === " ") continue; const st = t0 + i * 0.03, u = prog(t, st, 0.34); if (u <= 0) continue;
+    const px = x0 + c.measureText(s.slice(0, i)).width, w = c.measureText(ch).width, e = ease(u), b = back(u);
+    c.save(); c.globalAlpha = clamp(u * 3); c.translate(px + w / 2, y + (1 - e) * 110 - size * .35); c.rotate((1 - e) * (i % 2 ? .5 : -.5));
+    const k = 1.8 - .8 * b; c.scale(k, k); c.fillText(ch, -w / 2, size * .35); c.restore();
+  }
+  // light sweep across the finished line
+  const ls = prog(t, t0 + s.length * .03 + .25, .5);
+  if (ls > 0 && ls < 1) { c.save(); c.globalCompositeOperation = "source-atop"; const gx = x0 - 200 + (tw + 400) * ls; const g = c.createLinearGradient(gx - 120, 0, gx + 120, 0); g.addColorStop(0, "rgba(255,255,255,0)"); g.addColorStop(.5, "rgba(255,255,255,.75)"); g.addColorStop(1, "rgba(255,255,255,0)"); c.fillStyle = g; c.fillText(s, x0, y); c.restore(); }
+  c.restore();
+}
+function headline(a, b, t, t0, t1 = t0 + 0.3, size = 150) {
+  slam(a, 60, 330, size, "#fff", t, t0); slam(b, 60, 330 + size * 0.98, size, ORG, t, t1);
+}
+function pill(s, x, y, t, t0, bg = CREAM, fg = "#111", size = 42, align = "center") {
+  if (t < t0) return; const u = back(prog(t, t0, 0.32));
+  c.save(); c.font = `700 ${size}px Inter`; const w = c.measureText(s).width + size * 1.1, h = size * 1.75;
+  const x0 = align === "center" ? x - w / 2 : x; c.translate(x0 + w / 2, y + h / 2); c.scale(0.3 + 0.7 * u, 0.3 + 0.7 * u);
+  rr(-w / 2, -h / 2, w, h, h / 2, bg); c.fillStyle = fg; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(s, 0, 2); c.restore();
+}
+function counter(val, x, y, size, t, t0, dur, fmt = v => Math.round(v).toLocaleString("en-US"), color = ORG, align = "left") {
+  if (t < t0) return; const v = val * ease(prog(t, t0, dur)); const k = 0.6 + 0.4 * back(prog(t, t0, 0.35));
+  c.save(); c.translate(x, y); c.scale(k, k); c.shadowColor = "rgba(255,74,28,.55)"; c.shadowBlur = 50;
+  c.font = `${size}px Anton`; c.fillStyle = color; c.textAlign = align; c.fillText(fmt(v), 0, 0); c.restore();
+}
+function stamp(s, x, y, size, t, t0, color = ORG, rot = -0.12) {
+  if (t < t0) return; const u = prog(t, t0, 0.22); const k = 2.2 - 1.2 * ease(u);
+  c.save(); c.globalAlpha = clamp(u * 2); c.translate(x, y); c.rotate(rot); c.scale(k, k); c.font = `${size}px Anton`;
+  const w = c.measureText(s).width + 60, h = size * 1.15; c.strokeStyle = color; c.lineWidth = 12; c.strokeRect(-w / 2, -h / 2, w, h);
+  c.fillStyle = color; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(s, 0, 6); c.restore();
+}
+function icon(kind, x, y, s, color, alpha = 1) {
+  c.save(); c.globalAlpha *= alpha; c.translate(x, y); c.strokeStyle = color; c.fillStyle = color; c.lineWidth = s * 0.07; c.lineJoin = "round";
+  if (kind === "camera") { rr(-s * .5, -s * .32, s, s * .66, s * .1, null, color, s * .07); c.beginPath(); c.arc(0, 0, s * .2, 0, 7); c.stroke(); c.fillRect(-s * .22, -s * .44, s * .2, s * .1); }
+  if (kind === "phone") { rr(-s * .28, -s * .5, s * .56, s, s * .1, null, color, s * .07); c.fillRect(-s * .08, s * .36, s * .16, s * .05); }
+  if (kind === "ai") { rr(-s * .4, -s * .4, s * .8, s * .8, s * .12, null, color, s * .07); for (let k = -1; k <= 1; k++) { c.fillRect(k * s * .2 - s * .03, -s * .55, s * .06, s * .14); c.fillRect(k * s * .2 - s * .03, s * .41, s * .06, s * .14); } c.font = `${s * .36}px Anton`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("AI", 0, s * .02); }
+  if (kind === "glasses") { c.beginPath(); c.arc(-s * .28, 0, s * .22, 0, 7); c.stroke(); c.beginPath(); c.arc(s * .28, 0, s * .22, 0, 7); c.stroke(); c.beginPath(); c.moveTo(-s * .06, -s * .02); c.quadraticCurveTo(0, -s * .1, s * .06, -s * .02); c.stroke(); c.beginPath(); c.moveTo(-s * .5, -s * .04); c.lineTo(-s * .62, -s * .12); c.moveTo(s * .5, -s * .04); c.lineTo(s * .62, -s * .12); c.stroke(); }
+  if (kind === "cloud") { c.beginPath(); c.arc(-s * .22, s * .05, s * .22, Math.PI * .5, Math.PI * 1.5); c.arc(0, -s * .12, s * .28, Math.PI, 0); c.arc(s * .26, s * .05, s * .2, Math.PI * 1.5, Math.PI * .5); c.closePath(); c.stroke(); }
+  if (kind === "shield") { c.beginPath(); c.moveTo(0, -s * .5); c.lineTo(s * .4, -s * .32); c.lineTo(s * .36, s * .12); c.quadraticCurveTo(s * .2, s * .42, 0, s * .52); c.quadraticCurveTo(-s * .2, s * .42, -s * .36, s * .12); c.lineTo(-s * .4, -s * .32); c.closePath(); c.stroke(); c.beginPath(); c.moveTo(-s * .16, 0); c.lineTo(-s * .03, s * .14); c.lineTo(s * .18, -s * .12); c.stroke(); }
+  if (kind === "card") { rr(-s * .5, -s * .32, s, s * .64, s * .08, "#1b2236", color, s * .05); c.beginPath(); c.arc(-s * .24, -s * .04, s * .1, 0, 7); c.fill(); c.fillRect(-s * .38, s * .1, s * .28, s * .07); c.fillRect(-s * .02, -s * .12, s * .4, s * .06); c.fillRect(-s * .02, s * .02, s * .3, s * .06); }
+  if (kind === "server") { for (let k = 0; k < 3; k++) { rr(-s * .45, -s * .45 + k * s * .32, s * .9, s * .26, s * .05, null, color, s * .06); c.beginPath(); c.arc(s * .3, -s * .32 + k * s * .32, s * .04, 0, 7); c.fill(); } }
+  if (kind === "bubble") { rr(-s * .5, -s * .4, s, s * .62, s * .16, null, color, s * .07); c.beginPath(); c.moveTo(-s * .24, s * .22); c.lineTo(-s * .3, s * .46); c.lineTo(-s * .04, s * .22); c.stroke(); }
+  c.restore();
+}
+function arrow(x0, y0, x1, y1, color, u) {
+  const x = x0 + (x1 - x0) * u, y = y0 + (y1 - y0) * u;
+  c.save(); c.strokeStyle = color; c.fillStyle = color; c.lineWidth = 8; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x, y); c.stroke();
+  if (u > 0.9) { const a = Math.atan2(y1 - y0, x1 - x0); c.beginPath(); c.moveTo(x1, y1); c.lineTo(x1 - 26 * Math.cos(a - .5), y1 - 26 * Math.sin(a - .5)); c.lineTo(x1 - 26 * Math.cos(a + .5), y1 - 26 * Math.sin(a + .5)); c.fill(); }
+  c.restore();
+}
+function cursor(x, y, s, color) { const p = [[0, 0], [0, 58], [15, 45], [26, 70], [37, 65], [26, 41], [46, 41]]; c.save(); c.translate(x, y); c.scale(s, s); c.beginPath(); p.forEach(([a, b], i) => i ? c.lineTo(a, b) : c.moveTo(a, b)); c.closePath(); c.fillStyle = color; c.fill(); c.strokeStyle = CREAM; c.lineWidth = 3; c.stroke(); c.restore(); }
+
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById("gl"), antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1); renderer.setSize(1080, 1920, false);
+function dotTex() { const cv = document.createElement("canvas"); cv.width = cv.height = 64; const x = cv.getContext("2d"); const g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, "#fff"); g.addColorStop(.6, "#fff"); g.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(cv); }
+// ---------------- 3D background world (every scene) ----------------
+import { FontLoader } from "./node_modules/three/examples/jsm/loaders/FontLoader.js";
+import { TextGeometry } from "./node_modules/three/examples/jsm/geometries/TextGeometry.js";
+const bgScene = new THREE.Scene(), D = 5 / Math.tan(15 * Math.PI / 180);
+const bgCam = new THREE.PerspectiveCamera(30, 1080 / 1920, 0.1, 200); bgCam.position.set(0, 0, D);
+bgScene.add(new THREE.AmbientLight(0xffffff, .5));
+const dl = new THREE.DirectionalLight(0xffffff, 2.2); dl.position.set(-4, 6, 8); bgScene.add(dl);
+const pl = new THREE.PointLight(0xff6a3a, 60, 40); bgScene.add(pl);
+const bl = new THREE.PointLight(0x4f7bff, 50, 40); bgScene.add(bl);
+// particles
+const NP = 2400, pz0 = new Float32Array(NP), ppos = new Float32Array(NP * 3), pcol = [];
+{ const r = rand(99); for (let i = 0; i < NP; i++) { ppos[i * 3] = (r() - .5) * 20; ppos[i * 3 + 1] = (r() - .5) * 30; pz0[i] = r() * 50; const o = r() < .28; const k = .5 + .5 * r(); pcol.push(...(o ? [1 * k, .35 * k, .15 * k] : [.75 * k, .8 * k, .95 * k])); } }
+const pg = new THREE.BufferGeometry(); pg.setAttribute("position", new THREE.BufferAttribute(ppos, 3)); pg.setAttribute("color", new THREE.Float32BufferAttribute(pcol, 3));
+const pts = new THREE.Points(pg, new THREE.PointsMaterial({ size: .07, map: dotTex(), vertexColors: true, transparent: true, depthWrite: false, alphaTest: .1, opacity: .9 }));
+pts.renderOrder = 2; bgScene.add(pts);
+// floating wireframe shapes
+const wires = [[new THREE.IcosahedronGeometry(1.7, 1), 0xff4a1c, [-3.6, 5.6, -14]], [new THREE.TorusGeometry(1.3, .42, 10, 28), 0x4f7bff, [4.2, -6.5, -16]], [new THREE.OctahedronGeometry(1.4), 0xf3efe6, [3.8, 7.5, -20]], [new THREE.TorusKnotGeometry(1, .3, 64, 8), 0xff4a1c, [-4.5, -8, -22]]]
+  .map(([g, col, p]) => { const m = new THREE.LineSegments(new THREE.EdgesGeometry(g, 1), new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: .32 })); m.position.set(...p); m.userData.p = p; bgScene.add(m); return m; });
+// 3D story numbers
+const font = new FontLoader().parse(await (await fetch("node_modules/three/examples/fonts/helvetiker_bold.typeface.json")).json());
+const nums = [];
+for (let k = 1; k <= 7; k++) {
+  const g = new TextGeometry("0" + k, { font, size: 3.4, depth: 1.1, curveSegments: 8, bevelEnabled: true, bevelThickness: .12, bevelSize: .08, bevelSegments: 3 }); g.center();
+  const grp = new THREE.Group();
+  const solid = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: 0xff4a1c, metalness: .45, roughness: .3, emissive: 0x2a0800, transparent: true }));
+  const edge = new THREE.LineSegments(new THREE.EdgesGeometry(g, 25), new THREE.LineBasicMaterial({ color: 0xffb08f, transparent: true }));
+  grp.add(solid, edge); grp.visible = false; bgScene.add(grp); nums[k] = { grp, solid, edge };
+}
+// the scene "card": 2D scene drawn to a texture on a plane that tilts in 3D
+const tex = new THREE.CanvasTexture(sc); tex.colorSpace = THREE.SRGBColorSpace;
+const card = new THREE.Mesh(new THREE.PlaneGeometry(10 * 1080 / 1920, 10), new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: .02 }));
+card.renderOrder = 1; card.material.depthTest = false; bgScene.add(card);
+renderer.autoClear = false;
+
+// ---------------- hit effects ----------------
+const HITS = [];
+function hit(t, x, y, a = 1) { if (Number.isFinite(t)) HITS.push({ t, x, y, a }); }
+function shakeAt(t) { let sx = 0, sy = 0; for (const h of HITS) { const d = t - h.t; if (d < 0 || d > .7) continue; const e = h.a * Math.exp(-d * 8); sx += e * Math.sin(d * 71) * 22; sy += e * Math.cos(d * 57) * 16; } return [sx, sy]; }
+function hitFx(t) {
+  for (const h of HITS) { const d = t - h.t; if (d < 0 || d > .9) continue;
+    if (d < .2) { c.save(); c.globalAlpha = .28 * h.a * (1 - d / .2); c.fillStyle = "#fff"; c.fillRect(0, 0, 1080, 1920); c.restore(); }
+    const u = ease(d / .65); if (d < .65) { c.save(); c.globalAlpha = 1 - d / .65; c.strokeStyle = YEL; c.lineWidth = 16 * (1 - u) + 2; c.beginPath(); c.arc(h.x, h.y, 40 + 520 * u * h.a, 0, 7); c.stroke();
+      c.strokeStyle = ORG; c.lineWidth = 8 * (1 - u) + 1; c.beginPath(); c.arc(h.x, h.y, 20 + 330 * u * h.a, 0, 7); c.stroke(); c.restore(); }
+    const r = rand(Math.floor(h.t * 1000) + 3); c.save(); c.lineCap = "round";
+    for (let i = 0; i < 34; i++) { const ang = r() * 6.283, sp = (500 + r() * 1100) * h.a, x = h.x + Math.cos(ang) * sp * d, y = h.y + Math.sin(ang) * sp * d + 900 * d * d, l = .045;
+      c.globalAlpha = clamp(1 - d / .9); c.strokeStyle = r() < .5 ? YEL : (r() < .5 ? ORG : CREAM); c.lineWidth = 4 + r() * 5;
+      c.beginPath(); c.moveTo(x, y); c.lineTo(x - Math.cos(ang) * sp * l, y - (Math.sin(ang) * sp + 1800 * d) * l); c.stroke(); }
+    c.restore(); }
+}
+
+function captions(t) {
+  let ch = null; for (const k of CHUNKS) if (t >= k[0][0] - .05 && t < k[k.length - 1][1] + .25) ch = k; if (!ch) return;
+  c.save(); c.font = "700 64px Inter"; const sp = 22, ws = ch.map(w => c.measureText(w[2]).width); const tot = ws.reduce((a, b) => a + b, 0) + sp * (ch.length - 1);
+  let x = 540 - tot / 2; const y = 1690;
+  ch.forEach((w, j) => { const cur = t >= w[0] && t < w[1] + .02; if (cur) { const p = back(prog(t, w[0], .15)); c.save(); c.translate(x + ws[j] / 2, y - 22); c.scale(p, p); rr(-ws[j] / 2 - 14, -50, ws[j] + 28, 92, 18, ORG); c.restore(); }
+    c.fillStyle = cur ? "#fff" : (t > w[1] ? CREAM : "rgba(243,239,230,.55)"); c.shadowColor = "rgba(0,0,0,.6)"; c.shadowBlur = cur ? 0 : 12; c.fillText(w[2], x, y); x += ws[j] + sp; });
+  c.restore();
+}
+function wipe(t) {
+  for (let k = 1; k < PS.length; k++) { const u = (t - (PS[k] - .22)) / .44; if (u < 0 || u > 1) continue; const x = -900 + 2900 * io(u);
+    c.save(); c.fillStyle = ORG; c.beginPath(); c.moveTo(x, 0); c.lineTo(x + 520, 0); c.lineTo(x + 520 - 700, 1920); c.lineTo(x - 700, 1920); c.closePath(); c.fill();
+    c.fillStyle = CREAM; c.beginPath(); c.moveTo(x + 520, 0); c.lineTo(x + 600, 0); c.lineTo(x - 100 + 0, 1920); c.lineTo(x - 180, 1920); c.closePath(); c.fill(); c.restore(); }
+}
+function grain(t) { c.save(); c.globalAlpha = .05; const r = rand(Math.floor(t * 30) + 1); for (let i = 0; i < 900; i++) { c.fillStyle = r() > .5 ? "#fff" : "#000"; c.fillRect(r() * 1080, r() * 1920, 2, 2); } c.restore(); }
+

@@ -1,0 +1,6 @@
+kokoro/
+engine/node_modules/
+engine/*.ttf
+engine/*.otf
+engine/badge.png
+__pycache__/
