@@ -10,6 +10,7 @@
 - Microsoft To Do shutting down June 30, 2027
 
 # Evening Shorts already made
+- What is an IPO (2026-11-23, Anthropic $81.3B IPO hook)
 - What is a supply chain attack (2026-11-22)
 - How AI uses your computer
 - Why GTA 6 is so big
