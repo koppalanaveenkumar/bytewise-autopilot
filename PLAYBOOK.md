@@ -81,6 +81,19 @@ Each tool's first lines say how to use it.
 4. Thumbnail: 1280x720, in the style of `python_episode/example_thumb_ep11.png` (EP N, 3 words or fewer, Python tag, logo). No cartoon characters.
 5. Posting: YouTube only (horizontal video), slot A at 18:00 IST, slot B at 19:00 IST. The description includes the chapters.
 
+## Glow sketch (use it where it fits)
+
+The engine has a glow-sketch toolkit in `engine/head.html`: neon lines that draw themselves, with a hand-drawn wobble and a bright pen tip. Use it whenever a beat explains HOW something works, for example data going to a server, a hack path, or a before and after. It is free and fully in code.
+
+- `gsketch(GS.cloud(x, y, size), t, t0, dur, GOR, 8, seed)` draws a ready-made shape: laptop, phone, cloud, server, lock, chip, globe, chart, doc, house, key, wifi, check, cross. There are also primitives: rect, circle, arc, line, arrow. Any `[[x, y], ...]` list of points works as a custom path.
+- `gflow(GS.arrow(...), t, t0)` sends dots along a drawn arrow. `gtype("TEXT", x, y, size, color, t, t0)` types a neon label.
+- Colors: GCY (cyan), GOR (orange), GYE (yellow), GGR (green), GRD (red). Use 3 colors at most per beat.
+- Where to use it:
+  - Evening Shorts: 2-3 sketch beats in the explanation part. Real footage stays for the hook.
+  - News: at most 1-2 beats, only for a story with a mechanism.
+  - Python episodes: not used (they have their own code-window style).
+- Readability: draw sketches over calm or darkened footage. During a sketch beat you can darken more (fill the scene canvas with rgba(5,7,15,.5) before drawing). Each drawing takes at least 0.8 s, and the finished diagram stays on screen 2 s or more. Keep everything inside x 60-1020 and y 600-1550.
+
 ## Style rules (all formats)
 
 - Realistic: real stock footage behind everything, darkened at the top and bottom, plus motion graphics on top. No cartoon, anime or voxel characters. No drawn company logos.

@@ -108,6 +108,58 @@ function cursor(x, y, s, color) { const p = [[0, 0], [0, 58], [15, 45], [26, 70]
 const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById("gl"), antialias: true, alpha: true, preserveDrawingBuffer: true });
 renderer.setPixelRatio(1); renderer.setSize(1080, 1920, false);
 function dotTex() { const cv = document.createElement("canvas"); cv.width = cv.height = 64; const x = cv.getContext("2d"); const g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, "#fff"); g.addColorStop(.6, "#fff"); g.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(cv); }
+
+// ---------------- glow sketch toolkit ----------------
+// Neon lines that draw themselves (hand-drawn wobble, glow, bright pen tip). Draws on the current scene canvas `c`.
+// gsketch(shape, t, t0, dur, color, width, seed): shape = array of points [[x,y],...] or array of such paths.
+// Shapes: GS.rect(x,y,w,h) GS.circle(cx,cy,r) GS.arc(cx,cy,r,a0,a1) GS.line(x1,y1,x2,y2) GS.arrow(x1,y1,x2,y2)
+//   GS.laptop(x,y,s) GS.phone(x,y,s) GS.cloud(x,y,s) GS.server(x,y,s) GS.lock(x,y,s) GS.chip(x,y,s) GS.globe(x,y,s)
+//   GS.chart(x,y,s) GS.doc(x,y,s) GS.house(x,y,s) GS.key(x,y,s) GS.wifi(x,y,s) GS.check(x,y,s) GS.cross(x,y,s)
+// gflow(path, t, t0, color): dots travelling along a path after it is drawn. gtype(text, x, y, size, color, t, t0, dur): neon text typing in.
+const GCY = "#5ee7ff", GOR = "#ff6a2b", GYE = "#ffd23a", GGR = "#4ade80", GRD = "#ff4d5e";
+const GS = {
+  line: (a, b, c2, d) => [[a, b], [c2, d]],
+  rect: (x, y, w, h) => [[x, y], [x + w, y], [x + w, y + h], [x, y + h], [x, y]],
+  arc: (cx, cy, r, a0, a1, n = 40) => Array.from({ length: n + 1 }, (_, i) => { const a = a0 + (a1 - a0) * i / n; return [cx + Math.cos(a) * r, cy + Math.sin(a) * r]; }),
+  circle: (cx, cy, r) => GS.arc(cx, cy, r, -Math.PI / 2, Math.PI * 1.5, 60),
+  arrow: (x1, y1, x2, y2) => { const a = Math.atan2(y2 - y1, x2 - x1), h = 34; return [[[x1, y1], [x2, y2]], [[x2 - h * Math.cos(a - .5), y2 - h * Math.sin(a - .5)], [x2, y2], [x2 - h * Math.cos(a + .5), y2 - h * Math.sin(a + .5)]]]; },
+  laptop: (x, y, s) => [GS.rect(x - 1.5 * s, y - s, 3 * s, 1.9 * s), [[x - 1.9 * s, y + .9 * s], [x + 1.9 * s, y + .9 * s], [x + 2.1 * s, y + 1.15 * s], [x - 2.1 * s, y + 1.15 * s], [x - 1.9 * s, y + .9 * s]]],
+  phone: (x, y, s) => [GS.rect(x - .8 * s, y - 1.5 * s, 1.6 * s, 3 * s), GS.line(x - .2 * s, y + 1.25 * s, x + .2 * s, y + 1.25 * s)],
+  cloud: (x, y, s) => [[...GS.arc(x - .7 * s, y, .55 * s, Math.PI * .95, Math.PI * 1.95), ...GS.arc(x + .1 * s, y - .25 * s, .7 * s, Math.PI * 1.2, Math.PI * 2.05), ...GS.arc(x + .85 * s, y + .15 * s, .5 * s, Math.PI * 1.5, Math.PI * 2.5), [x + .85 * s, y + .65 * s], [x - .9 * s, y + .65 * s], ...GS.arc(x - .9 * s, y + .3 * s, .35 * s, Math.PI * .5, Math.PI * 1.05)]],
+  server: (x, y, s) => [GS.rect(x - s, y - 1.4 * s, 2 * s, .8 * s), GS.rect(x - s, y - .4 * s, 2 * s, .8 * s), GS.rect(x - s, y + .6 * s, 2 * s, .8 * s), GS.line(x + .5 * s, y - s, x + .7 * s, y - s), GS.line(x + .5 * s, y, x + .7 * s, y), GS.line(x + .5 * s, y + s, x + .7 * s, y + s)],
+  lock: (x, y, s) => [GS.rect(x - .6 * s, y - .1 * s, 1.2 * s, .9 * s), GS.arc(x, y - .1 * s, .4 * s, Math.PI, Math.PI * 2, 18)],
+  chip: (x, y, s) => { const o = [GS.rect(x - s, y - s, 2 * s, 2 * s), GS.rect(x - .45 * s, y - .45 * s, .9 * s, .9 * s)]; for (let k = -2; k <= 2; k++) { const d = k * .38 * s; o.push(GS.line(x + d, y - s, x + d, y - 1.35 * s), GS.line(x + d, y + s, x + d, y + 1.35 * s), GS.line(x - s, y + d, x - 1.35 * s, y + d), GS.line(x + s, y + d, x + 1.35 * s, y + d)); } return o; },
+  globe: (x, y, s) => [GS.circle(x, y, s), GS.line(x - s, y, x + s, y), GS.arc(x, y, s, -Math.PI / 2, Math.PI / 2).map(([a, b]) => [x + (a - x) * .45, b]), GS.arc(x, y, s, Math.PI / 2, Math.PI * 1.5).map(([a, b]) => [x + (a - x) * .45, b])],
+  chart: (x, y, s) => [[[x - 1.2 * s, y - 1.1 * s], [x - 1.2 * s, y + s], [x + 1.3 * s, y + s]], [[x - .9 * s, y + .5 * s], [x - .3 * s, y], [x + .2 * s, y + .25 * s], [x + 1.1 * s, y - .8 * s]]],
+  doc: (x, y, s) => [[[x - .8 * s, y - s], [x + .4 * s, y - s], [x + .8 * s, y - .6 * s], [x + .8 * s, y + s], [x - .8 * s, y + s], [x - .8 * s, y - s]], GS.line(x - .5 * s, y - .3 * s, x + .5 * s, y - .3 * s), GS.line(x - .5 * s, y + .1 * s, x + .5 * s, y + .1 * s), GS.line(x - .5 * s, y + .5 * s, x + .2 * s, y + .5 * s)],
+  house: (x, y, s) => [[[x - s, y], [x, y - s], [x + s, y]], GS.rect(x - .75 * s, y - .1 * s, 1.5 * s, 1.1 * s)],
+  key: (x, y, s) => [GS.circle(x - .6 * s, y, .35 * s), [[x - .25 * s, y], [x + s, y], [x + s, y + .3 * s]], GS.line(x + .6 * s, y, x + .6 * s, y + .25 * s)],
+  wifi: (x, y, s) => [GS.arc(x, y + .6 * s, 1.2 * s, Math.PI * 1.25, Math.PI * 1.75, 20), GS.arc(x, y + .6 * s, .8 * s, Math.PI * 1.25, Math.PI * 1.75, 16), GS.arc(x, y + .6 * s, .4 * s, Math.PI * 1.25, Math.PI * 1.75, 12)],
+  check: (x, y, s) => [[[x - .6 * s, y], [x - .15 * s, y + .45 * s], [x + .7 * s, y - .5 * s]]],
+  cross: (x, y, s) => [GS.line(x - .6 * s, y - .6 * s, x + .6 * s, y + .6 * s), GS.line(x + .6 * s, y - .6 * s, x - .6 * s, y + .6 * s)],
+};
+function _gwob(pts, seed, amp) { const r = rand(seed), o = []; for (let i = 0; i < pts.length - 1; i++) { const a = pts[i], b = pts[i + 1], n = Math.max(2, Math.round(Math.hypot(b[0] - a[0], b[1] - a[1]) / 14)); for (let k = 0; k < n; k++) { const q = k / n; o.push([a[0] + (b[0] - a[0]) * q + (r() - .5) * amp, a[1] + (b[1] - a[1]) * q + (r() - .5) * amp]); } } o.push(pts[pts.length - 1]); return o; }
+const _gcache = new Map();
+function gsketch(shape, t, t0, dur, col = GCY, w = 7, seed = 1) {
+  if (t < t0) return; const paths = Array.isArray(shape[0][0]) ? shape : [shape];
+  const key = JSON.stringify([paths.length, paths[0][0], seed]); let P = _gcache.get(key);
+  if (!P) { P = paths.map((p, i) => { const q = _gwob(p, seed * 7 + i, 5); let L = 0; for (let k = 1; k < q.length; k++) L += Math.hypot(q[k][0] - q[k - 1][0], q[k][1] - q[k - 1][1]); return { q, L }; }); _gcache.set(key, P); }
+  const total = P.reduce((a, p) => a + p.L, 0); let need = total * clamp((t - t0) / dur), head = null;
+  c.save(); c.lineCap = "round"; c.lineJoin = "round";
+  for (const [blur, lw, al, stroke] of [[38, w * 3, .32, col], [16, w * 1.6, .6, col], [0, w * .55, 1, "#fff"]]) {
+    c.shadowColor = col; c.shadowBlur = blur; c.strokeStyle = stroke; c.globalAlpha = al; c.lineWidth = lw; let rem = need;
+    for (const { q, L } of P) { if (rem <= 0) break; c.beginPath(); c.moveTo(...q[0]); let acc = 0;
+      for (let k = 1; k < q.length; k++) { const d = Math.hypot(q[k][0] - q[k - 1][0], q[k][1] - q[k - 1][1]); if (acc + d >= rem) { const f = (rem - acc) / d; head = [q[k - 1][0] + (q[k][0] - q[k - 1][0]) * f, q[k - 1][1] + (q[k][1] - q[k - 1][1]) * f]; c.lineTo(...head); acc = rem; break; } acc += d; c.lineTo(...q[k]); }
+      c.stroke(); rem -= L; if (rem > 0) head = null; }
+  }
+  if (head && need < total) { c.globalAlpha = 1; c.shadowBlur = 50; c.shadowColor = "#fff"; c.fillStyle = "#fff"; c.beginPath(); c.arc(head[0], head[1], 9, 0, 7); c.fill(); }
+  c.restore();
+}
+function gflow(path, t, t0, col = GYE, n = 4, speed = .9) { if (t < t0) return; const p = Array.isArray(path[0][0]) ? path[0] : path; const a = p[0], b = p[p.length - 1];
+  for (let k = 0; k < n; k++) { const q = ((t - t0) * speed + k / n) % 1; c.save(); c.shadowColor = col; c.shadowBlur = 25; c.fillStyle = col; c.beginPath(); c.arc(a[0] + (b[0] - a[0]) * q, a[1] + (b[1] - a[1]) * q, 8, 0, 7); c.fill(); c.restore(); } }
+function gtype(s, x, y, size, col, t, t0, dur = .6, align = "left") { if (t < t0) return; const n = Math.floor(s.length * clamp((t - t0) / dur));
+  c.save(); c.font = `${size}px Anton`; c.textAlign = align; c.shadowColor = col; c.shadowBlur = 30; c.fillStyle = col; c.fillText(s.slice(0, n), x, y); c.restore(); }
+
 // ---------------- 3D background world (every scene) ----------------
 import { FontLoader } from "./node_modules/three/examples/jsm/loaders/FontLoader.js";
 import { TextGeometry } from "./node_modules/three/examples/jsm/geometries/TextGeometry.js";
