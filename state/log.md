@@ -15,3 +15,6 @@
 - How AI uses your computer
 - Why GTA 6 is so big
 - What is the cloud
+
+## Python episodes posted
+- Ep 13 Modules and import (slot B, 2026-11-23)
