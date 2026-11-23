@@ -134,12 +134,14 @@ The engine has a glow-sketch toolkit in `engine/head.html`: neon lines that draw
 3. **Import into vidIQ.** `vidiq_video_upload(url=VIDEO_URL)` gives an uploadId. `vidiq_upload_image` with THUMB_URL gives a thumbnail image id; YouTube allows thumbnails under 2 MB, so shrink to JPEG if needed.
 4. **Find the accounts.** `vidiq_social_account_list` gives the YouTube and Instagram account ids that have canPublish set.
 5. **Create the draft.** `vidiq_social_post_draft_create` with media = the uploadId and publishAt = the slot time today in IST, e.g. 2026-11-24T08:00:00+05:30. Use the next day if that time has already passed.
-   - **YOUTUBE** destination: title, text = description, tags, privacyStatus "public", thumbnailImageId.
-   - **INSTAGRAM** destination: text = caption. News and Shorts only.
+   - **YOUTUBE** destination: title, text = description, tags, privacyStatus "public", thumbnailImageId, **and its own publishAt** (the same slot time). The top-level publishAt does not always reach YouTube.
+   - **INSTAGRAM** destination: text = caption, and its own publishAt. News and Shorts only.
    - Fix anything the draft refuses with `vidiq_social_post_draft_update`.
+   - **Every** `vidiq_social_post_draft_update` that touches the YouTube destination must send publishAt and privacyStatus "public" again: an update can reset YouTube's time to none.
+   - Before telling the user, call `vidiq_social_post_draft_get` and check that **both** destinations show scheduledFor = the slot time. If YouTube shows null, set it again with draft_update.
 6. **Notify the user.** Send the video file, the thumbnails and the text with SendUserFile and SendUserMessage, so their phone gets a notification. Say exactly when it will go out. End with: "Reply 'post it' to schedule it, or tell me what to change."
 7. **Publish only on approval.**
-   - Only after the user replies "post it" in this chat: `vidiq_social_post_publish(postId, revision)`. Then confirm the scheduled time and say whether any destination was refused.
+   - Only after the user replies "post it" in this chat: first `vidiq_social_post_draft_get`. If YouTube's scheduledFor is null, restore the slot time with draft_update (publishAt + privacyStatus "public") and use the new revision. Then `vidiq_social_post_publish(postId, revision)`. Then confirm the scheduled time and say whether any destination was refused.
    - If they ask for changes, make them, re-render if needed, and update the draft.
    - If they reply after the slot time, set publishAt to now plus 10 minutes and say so.
 
