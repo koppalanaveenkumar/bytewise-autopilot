@@ -2,7 +2,7 @@
 import math, re, sys
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
-sys.path.insert(0, "/home/claude/video")
+sys.path.insert(0, __import__("os").path.dirname(__import__("os").path.abspath(__file__)))
 import make as m
 
 W, H, FPS = 1920, 1080, 30  # logical layout units
@@ -15,7 +15,7 @@ INK, PANEL, CODEBG = (7, 9, 20), (26, 32, 66), (10, 13, 30)
 MONO = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
 MONOB = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf"
 EMO = ImageFont.truetype("/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf", 109)
-_b = Image.open("/home/claude/logo/brand.png").convert("RGBA")
+_b = Image.open(__import__("os").path.join(__import__("os").path.dirname(__import__("os").path.abspath(__file__)), "brand.png")).convert("RGBA")
 BRAND = _b.resize((round(_b.width * SC), round(_b.height * SC)), Image.LANCZOS)
 _mf = {}
 

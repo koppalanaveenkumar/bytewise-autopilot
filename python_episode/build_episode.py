@@ -1,10 +1,13 @@
 """Build Python for Beginners Episode 11 at 1440p from the Kokoro narration timings."""
 import sys, os, json, re, subprocess
 from multiprocessing import Pool
-HERE = "/home/claude/ep11"
-sys.path.insert(0, HERE)
+HERE = os.getcwd()  # work dir: el_script.txt, tts_timing.json, voice.wav, scenes_epN.py
+KIT = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE); sys.path.insert(0, KIT)
+os.makedirs(f"{HERE}/out", exist_ok=True)
 import look2x as L
-import scenes_ep11 as SC
+import importlib
+SC = importlib.import_module(os.environ.get("SCENES", "scenes_ep11"))
 from PIL import Image
 
 OUT = f"{HERE}/out"
@@ -77,7 +80,7 @@ if __name__ == "__main__":
         with open(f"{OUT}/list.txt", "w") as fh:
             for pl in plan: fh.write(f"file '{OUT}/{pl[0]}.mp4'\n")
         subprocess.check_call(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", f"{OUT}/list.txt", "-c", "copy", f"{OUT}/video.mp4"])
-        final = f"{OUT}/python-for-beginners-ep11-classes-objects.mp4"
+        final = os.environ.get("OUTNAME", f"{OUT}/episode.mp4")
         subprocess.check_call(["ffmpeg", "-y", "-loglevel", "error", "-i", f"{OUT}/video.mp4", "-i", f"{HERE}/voice.wav",
                                "-map", "0:v", "-map", "1:a", "-c:v", "copy",
                                "-af", "loudnorm=I=-15:TP=-1.5:LRA=9,apad", "-c:a", "aac", "-b:a", "192k", "-ar", "48000",

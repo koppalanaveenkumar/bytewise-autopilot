@@ -2,7 +2,9 @@
 
 For the scheduled runs. Channel: ByteWise (@heybytewise), YouTube + Instagram, India audience, faceless, English only, voice only (no music, no sound effects).
 
-Never publish, post, upload or schedule anything. Never call vidIQ account, publishing or scheduling tools. Never spend vidIQ or Higgsfield credits. Never print or save the Pixabay key anywhere; it comes in the task prompt and only goes into the PIXABAY_KEY environment variable.
+Publishing is ONE-TAP: prepare the post, then publish only after the user replies "post it" (or similar clear approval) in this run's chat. Never publish without that reply. Never spend vidIQ or Higgsfield credits (uploads, drafts and YouTube/Instagram publishing are free; X posts cost credits, so never post to X). Never print or save the Pixabay key anywhere; it comes in the task prompt and only goes into the PIXABAY_KEY environment variable.
+
+Repo state: `state/log.md` lists stories and Shorts already covered, so skip repeats. `state/python.json` holds the episode counter. To change the repo, first call add_repo(owner="koppalanaveenkumar", repo="bytewise-autopilot", access="push"), then commit with `git pull --rebase` and `git push` on main.
 
 ## 0. Setup (every run, fresh workspace)
 
@@ -59,12 +61,25 @@ Each tool's first lines say how to use it.
 - Same engine and same steps (voice, footage, scenes, checklist, render). Use about 6 scenes, with the header text "EXPLAINED SIMPLY".
 - Thumbnail rules are the same as the news.
 
-## 3. Python for Beginners episode (weekly)
+## 3. Python for Beginners episodes (2 a day, Mon-Sat; slot A posts 18:00, slot B posts 19:00 IST)
 
-- The next episode number is one after the last delivered episode (Ep11 was "Classes and Objects"). The title format is "Python for Beginners | Episode N - Explained Simply".
-- `reference/python_episode/` has the Episode 11 build scripts (1440p widescreen, code windows with typing, output panel, LEARN tag). Adapt their paths to $W.
-- Run every code example in Python before it goes in the script.
-- Deliver the video, an English .srt and a thumbnail.
+1. **Claim the episode number first.** Pull main, read `state/python.json`, take `last_episode + 1` and the first item of `next_topics`. Write those back (`last_episode` +1, topic moved into `done`), then commit and push right away, so slot B gets the next one.
+2. The title format is "Python for Beginners | Episode N - Explained Simply". The script follows the ByteWise long-video rules:
+   - hook in the first 10 seconds
+   - one concept at a time
+   - one real-life example
+   - a recap at the end
+   - CTA: "Subscribe for Episode N+1 - simple tech explained"
+   - aim for 2.5-4 minutes
+   - "with me", never "us"
+   Run every code example in Python first, so the screen output is real.
+3. Kit: `$BW/python_episode/`. Copy `scenes_ep11.py` to `$W/scenes_epN.py` and rewrite `GROUPS` and the scenes for the topic, keeping the same look (1440p, code windows with typing, output panel, LEARN tag, chapter label).
+   - Voice: `python3 $BW/tools/gen.py` in `$W`.
+   - Check: `cd $W && SCENES=scenes_epN python3 $BW/python_episode/build_episode.py plan`, then `... frames <sceneid>:<t> ...` and look at `out/sheet.png`.
+   - Render: `... render`, then `OUTNAME=$W/out/python-for-beginners-epN-<slug>.mp4 ... join`. This prints the chapters.
+   - Subtitles: `python3 $BW/python_episode/srt.py $W/out/python-for-beginners-epN-english.srt`
+4. Thumbnail: 1280x720, in the style of `python_episode/example_thumb_ep11.png` (EP N, 3 words or fewer, Python tag, logo). No cartoon characters.
+5. Posting: YouTube only (horizontal video), slot A at 18:00 IST, slot B at 19:00 IST. The description includes the chapters.
 
 ## Style rules (all formats)
 
@@ -73,7 +88,20 @@ Each tool's first lines say how to use it.
 - No music, no transition sounds.
 - Don't name subjects like biology, commerce or arts.
 
-## Delivering
+## Delivering and posting (one-tap)
 
-- Send the video, the thumbnail options and the pasteable text with SendUserFile and a message, so the user gets a phone notification.
-- End with: "Reply 'post it' to publish, or tell me what to change." If the user replies "post it" in that run's chat, publishing still needs their YouTube and Instagram accounts connected in vidIQ and the video at a public URL. If either is missing, say so instead of trying.
+1. **Update the log.** Append today's news headlines (or the Short's topic) to `state/log.md`, then commit and push.
+2. **Upload copy.** `bash $BW/tools/publish_prep.sh OUT.mp4 THUMB.png SLOT` with SLOT = news | short | epA | epB. It makes a high-quality copy under 100 MB on a public media branch and prints VIDEO_URL and THUMB_URL.
+3. **Import into vidIQ.** `vidiq_video_upload(url=VIDEO_URL)` gives an uploadId. `vidiq_upload_image` with THUMB_URL gives a thumbnail image id; YouTube allows thumbnails under 2 MB, so shrink to JPEG if needed.
+4. **Find the accounts.** `vidiq_social_account_list` gives the YouTube and Instagram account ids that have canPublish set.
+5. **Create the draft.** `vidiq_social_post_draft_create` with media = the uploadId and publishAt = the slot time today in IST, e.g. 2026-11-24T08:00:00+05:30. Use the next day if that time has already passed.
+   - **YOUTUBE** destination: title, text = description, tags, privacyStatus "public", thumbnailImageId.
+   - **INSTAGRAM** destination: text = caption. News and Shorts only.
+   - Fix anything the draft refuses with `vidiq_social_post_draft_update`.
+6. **Notify the user.** Send the video file, the thumbnails and the text with SendUserFile and SendUserMessage, so their phone gets a notification. Say exactly when it will go out. End with: "Reply 'post it' to schedule it, or tell me what to change."
+7. **Publish only on approval.**
+   - Only after the user replies "post it" in this chat: `vidiq_social_post_publish(postId, revision)`. Then confirm the scheduled time and say whether any destination was refused.
+   - If they ask for changes, make them, re-render if needed, and update the draft.
+   - If they reply after the slot time, set publishAt to now plus 10 minutes and say so.
+
+Slot times (IST): news 08:00 every day · Short 17:00 every day · Python A 18:00 and Python B 19:00, Mon-Sat.

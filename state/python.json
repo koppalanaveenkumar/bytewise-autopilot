@@ -1,0 +1,12 @@
+{
+  "last_episode": 11,
+  "done": {"10": "Tuples and Sets", "11": "Classes and Objects"},
+  "next_topics": [
+    "Inheritance", "Modules and import", "Errors and try/except", "Reading and writing files",
+    "List comprehensions", "Lambda, map and filter", "*args and **kwargs", "Dates and times (datetime)",
+    "JSON", "pip and virtual environments", "Calling a web API (requests)", "Mini project: to-do list app",
+    "Recursion", "Sorting and searching", "Special methods (__str__, __len__)", "Decorators",
+    "Generators and yield", "Regular expressions basics", "Testing your code (unittest)", "Mini project: quiz game",
+    "Working with CSV files", "Enumerate and zip", "Sets in practice: removing duplicates", "Global and local scope"
+  ]
+}

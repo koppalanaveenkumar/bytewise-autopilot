@@ -1,6 +1,6 @@
 import json, re
-T = json.load(open("/home/claude/ep11/tts_timing.json"))
-paras = open("/home/claude/ep11/el_script.txt").read().strip().split("\n\n")
+T = json.load(open("tts_timing.json"))
+paras = open("el_script.txt").read().strip().split("\n\n")
 fix = []
 sents = []
 for p, st in zip(paras, T["para_starts"]):
@@ -23,6 +23,6 @@ for t0, s, t1 in sents:
     for c in chunks:
         d = (t1 - t0) * len(c) / tot
         cues.append((t, t + d - 0.02, c)); t += d
-with open("/home/claude/ep11/out/python-for-beginners-ep11-english.srt", "w") as f:
+with open(__import__("sys").argv[1], "w") as f:
     for i, (a_, b_, c) in enumerate(cues, 1): f.write(f"{i}\n{ts(a_)} --> {ts(b_)}\n{c}\n\n")
 print(len(cues))

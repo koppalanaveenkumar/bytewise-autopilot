@@ -1,0 +1,33 @@
+Priya opens a bank account with one thousand rupees. She deposits five hundred, and the balance is fifteen hundred. She tries to take out five thousand: Not enough money! Today you'll build this yourself, with classes and objects.
+
+A class is a blueprint. Think of a cookie cutter: one shape, but you can press out as many cookies as you like. Each cookie is an object.
+
+Let's make a class. Write class, then the name, Dog, and a colon. Class names usually start with a capital letter.
+
+Inside, we write a special method called init. It runs automatically every time you make a new object. Its job is to set the object up.
+
+Self means this object itself. Self dot name equals name stores the name inside the object. Values stored like this are called attributes.
+
+Now make an object. My dog equals Dog, Bruno. Print my dog dot name, and you get Bruno.
+
+Make a second one, called Max. Same blueprint, different object. Each dog keeps its own name.
+
+Objects can also do things. A function inside a class is called a method. Let's add bark, which prints the dog's name and says Woof.
+
+Call it with a dot. My dog dot bark. And Bruno says Woof!
+
+A common mistake: forgetting self. Write bark with empty brackets, and Python says TypeError: bark takes zero arguments, but one was given. Every method needs self first.
+
+Now our mini project: a bank account. Every account has an owner, and a balance.
+
+In init, we store the owner and the starting balance. Then the deposit method adds the amount to the balance, and prints it.
+
+The withdraw method checks first. Is there enough money? If yes, take it out. If not, print Not enough money.
+
+Let's run it. Open an account for Priya with one thousand. Deposit five hundred, and the balance is fifteen hundred. Withdraw five thousand? Not enough money! Her balance stays safe.
+
+Quick recap. A class is a blueprint, and objects are made from it. Init sets up each new object. Self dot something stores attributes. And methods are functions that objects can do.
+
+Homework: make a Student class with a name and marks. Add a method that prints pass if the marks are thirty-five or more. Post your code in the comments!
+
+In the next episode, we'll build a full project: a quiz game, using everything we've learned so far. Subscribe for Episode 12 - simple tech explained. See you there!
