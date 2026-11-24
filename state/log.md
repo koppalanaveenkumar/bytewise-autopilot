@@ -1,5 +1,14 @@
 # News stories already covered (newest first). Runs append today's 7 headlines and skip repeats.
 
+## 2026-11-24
+- Nvidia reinstates Jensen Huang as CEO
+- GTA 6 about 45M copies (Alinea)
+- CrowdStrike buying Zscaler $43.9B
+- Amazon buying much of Decart ~$7.5B
+- HPE Q4 revenue +50% to $14.5B
+- Sierra raising at $30B valuation
+- Musk: SpaceX behind in AI, renting compute
+
 ## 2026-11-23
 - Riemann Hypothesis proof certified (Lean)
 - Tesla FSD v15 Reality View
