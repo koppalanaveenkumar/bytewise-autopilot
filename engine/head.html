@@ -214,8 +214,9 @@ function captions(t) {
   let ch = null; for (const k of CHUNKS) if (t >= k[0][0] - .05 && t < k[k.length - 1][1] + .25) ch = k; if (!ch) return;
   c.save(); c.font = "700 64px Inter"; const sp = 22, ws = ch.map(w => c.measureText(w[2]).width); const tot = ws.reduce((a, b) => a + b, 0) + sp * (ch.length - 1);
   let x = 540 - tot / 2; const y = 1690;
+  rr(x - 30, y - 80, tot + 60, 116, 30, "rgba(7,10,20,.74)", "rgba(255,255,255,.12)", 2);
   ch.forEach((w, j) => { const cur = t >= w[0] && t < w[1] + .02; if (cur) { const p = back(prog(t, w[0], .15)); c.save(); c.translate(x + ws[j] / 2, y - 22); c.scale(p, p); rr(-ws[j] / 2 - 14, -50, ws[j] + 28, 92, 18, ORG); c.restore(); }
-    c.fillStyle = cur ? "#fff" : (t > w[1] ? CREAM : "rgba(243,239,230,.55)"); c.shadowColor = "rgba(0,0,0,.6)"; c.shadowBlur = cur ? 0 : 12; c.fillText(w[2], x, y); x += ws[j] + sp; });
+    c.fillStyle = cur ? "#fff" : (t > w[1] ? CREAM : "rgba(243,239,230,.78)"); c.shadowColor = "rgba(0,0,0,.85)"; c.shadowBlur = cur ? 0 : 10; c.fillText(w[2], x, y); x += ws[j] + sp; });
   c.restore();
 }
 function wipe(t) {
