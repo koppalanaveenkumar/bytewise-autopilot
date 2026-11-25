@@ -1,5 +1,14 @@
 # News stories already covered (newest first). Runs append today's 7 headlines and skip repeats.
 
+## 2026-11-25
+- Amazon MK30 drone crashes onto Michigan garage, FAA probe
+- Anthropic closes below $83 IPO price ($81.91)
+- Microsoft declares Code Red after 24-hour outage
+- RBI proposes Stop Switch for digital payments
+- OpenAI GPT-6 designs proteins (35 of 322 bound)
+- Bitcoin back below $60,000
+- Black Friday: Adobe expects +95% AI traffic, $12.9B
+
 ## 2026-11-24
 - Nvidia reinstates Jensen Huang as CEO
 - GTA 6 about 45M copies (Alinea)
