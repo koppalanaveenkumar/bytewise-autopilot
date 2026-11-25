@@ -28,6 +28,7 @@
 - Microsoft To Do shutting down June 30, 2027
 
 # Evening Shorts already made
+- How delivery drones work (2026-11-25, Amazon drone crash hook)
 - What is an LLM (2026-11-24, long video + Short)
 - What is a GPU (2026-11-24, Nvidia CEO return hook)
 - What is an IPO (2026-11-23, Anthropic $81.3B IPO hook)
